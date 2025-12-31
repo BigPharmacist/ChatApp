@@ -1,73 +1,108 @@
-# React + TypeScript + Vite
+# Nebius Chat App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Eine Chat-Anwendung mit Nebius AI Studio LLMs und Web-Suche via Brave API.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Multi-Model Support (Llama, Qwen, DeepSeek, Gemma, Kimi, GLM)
+- Web-Suche via Brave API (Function Calling / Tool Use)
+- Chat-Verlauf wird in Supabase gespeichert
+- Automatische Titel-Generierung
+- Streaming-Antworten
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: Supabase Edge Functions (Deno)
+- **Datenbank**: Supabase (PostgreSQL)
+- **LLM API**: Nebius AI Studio
+- **Web-Suche**: Brave Search API
 
-## Expanding the ESLint configuration
+## Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 1. Voraussetzungen
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Node.js (falls nicht vorhanden)
+brew install node
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Supabase CLI
+brew install supabase/tap/supabase
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Repository klonen
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/BigPharmacist/ChatApp.git
+cd ChatApp
+npm install
 ```
+
+### 3. API-Keys besorgen
+
+- **Nebius API Key**: [tokenfactory.nebius.com](https://tokenfactory.nebius.com)
+- **Brave Search API Key**: [brave.com/search/api](https://brave.com/search/api) (Free: 2000 Queries/Monat)
+
+### 4. Environment-Dateien erstellen
+
+**`.env`** (im Hauptverzeichnis):
+```env
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<wird-von-supabase-start-ausgegeben>
+```
+
+**`supabase/.env`**:
+```env
+NEBIUS_API_KEY=<dein-nebius-api-key>
+BRAVE_API_KEY=<dein-brave-api-key>
+```
+
+### 5. Supabase starten
+
+```bash
+supabase start
+```
+
+Kopiere den `anon key` aus der Ausgabe in deine `.env` Datei.
+
+### 6. App starten
+
+Du brauchst zwei Terminals:
+
+**Terminal 1 - Edge Functions:**
+```bash
+supabase functions serve --env-file supabase/.env
+```
+
+**Terminal 2 - Frontend:**
+```bash
+npm run dev
+```
+
+Die App läuft dann unter: http://localhost:5173
+
+## Verfügbare Modelle
+
+| Modell | Tool Use |
+|--------|----------|
+| Llama 3.3 70B | Ja |
+| Qwen3 32B / 235B | Ja |
+| DeepSeek V3 | Ja |
+| DeepSeek R1 | Ja |
+| Gemma 3 27B | Ja |
+| Kimi K2 | Ja |
+| GLM 4.5 | Ja |
+
+## Web-Suche
+
+Die App nutzt Function Calling um automatisch im Internet zu suchen, wenn der Nutzer nach aktuellen Informationen fragt:
+
+- "Was sind die aktuellen Nachrichten?"
+- "Suche im Internet nach..."
+- "Wie ist das Wetter in Berlin?"
+
+Bei erfolgreicher Suche wird angezeigt: `🔍 *Websuche durchgeführt*`
+
+## Lizenz
+
+MIT
