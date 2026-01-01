@@ -6,13 +6,20 @@ import { ModelSelector } from './ModelSelector'
 import { SettingsDialog } from './SettingsDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { BookOpen, Globe } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ChatContainerProps {
   chatId: string | null
   onTitleGenerated: (chatId: string, title: string) => void
+  ragEnabled: boolean
+  onRagToggle: (enabled: boolean) => void
+  documentCount: number
+  webSearchEnabled: boolean
+  onWebSearchToggle: (enabled: boolean) => void
 }
 
-export function ChatContainer({ chatId, onTitleGenerated }: ChatContainerProps) {
+export function ChatContainer({ chatId, onTitleGenerated, ragEnabled, onRagToggle, documentCount, webSearchEnabled, onWebSearchToggle }: ChatContainerProps) {
   const { systemPrompt, saveSystemPrompt } = useSettings()
 
   const {
@@ -23,7 +30,7 @@ export function ChatContainer({ chatId, onTitleGenerated }: ChatContainerProps) 
     sendMessage,
     clearMessages,
     availableModels,
-  } = useChat({ chatId, onTitleGenerated, systemPrompt })
+  } = useChat({ chatId, onTitleGenerated, systemPrompt, ragEnabled, webSearchEnabled })
 
   if (!chatId) {
     return (
@@ -47,6 +54,30 @@ export function ChatContainer({ chatId, onTitleGenerated }: ChatContainerProps) 
             onModelChange={setSelectedModel}
             disabled={isLoading}
           />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onWebSearchToggle(!webSearchEnabled)}
+            disabled={isLoading}
+            title={webSearchEnabled ? 'Web-Suche deaktivieren' : 'Web-Suche aktivieren'}
+            className={cn(
+              webSearchEnabled && 'bg-blue-500 text-white hover:bg-blue-600'
+            )}
+          >
+            <Globe className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onRagToggle(!ragEnabled)}
+            disabled={isLoading || documentCount === 0}
+            title={documentCount === 0 ? 'Keine Dokumente vorhanden' : ragEnabled ? 'RAG deaktivieren' : 'RAG aktivieren'}
+            className={cn(
+              ragEnabled && 'bg-green-500 text-white hover:bg-green-600'
+            )}
+          >
+            <BookOpen className="h-4 w-4" />
+          </Button>
           <SettingsDialog
             systemPrompt={systemPrompt}
             onSave={saveSystemPrompt}

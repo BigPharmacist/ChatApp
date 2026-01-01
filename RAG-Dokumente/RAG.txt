@@ -1,0 +1,3 @@
+Im Elektroraum sind 2 Fritzboxen, die auch 2 DSL Anschlüsse haben.
+über den einen läuft die Telefonleitung, über den anderen das Fax.
+

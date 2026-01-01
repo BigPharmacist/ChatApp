@@ -1,5 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { supabase, type Message } from '@/lib/supabase'
+import { rag } from '@/lib/rag'
+
+const RAG_COLLECTION = 'global_documents'
 
 const AVAILABLE_MODELS = [
   { id: 'meta-llama/Llama-3.3-70B-Instruct-fast', name: 'Llama 3.3 70B (Fast)' },
@@ -20,9 +23,11 @@ interface UseChatOptions {
   chatId: string | null
   onTitleGenerated?: (chatId: string, title: string) => void
   systemPrompt?: string
+  ragEnabled?: boolean
+  webSearchEnabled?: boolean
 }
 
-export function useChat({ chatId, onTitleGenerated, systemPrompt }: UseChatOptions) {
+export function useChat({ chatId, onTitleGenerated, systemPrompt, ragEnabled = false, webSearchEnabled = true }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedModel, setSelectedModel] = useState('openai/gpt-oss-120b')
@@ -129,11 +134,31 @@ Assistent: ${assistantMessage.slice(0, 200)}`,
     // Save user message to DB
     await saveMessage({ chat_id: chatId, role: 'user', content, model: selectedModel })
 
+    // RAG: Get relevant document chunks if enabled
+    let ragContext = ''
+    if (ragEnabled) {
+      try {
+        const { data: results } = await rag.query(RAG_COLLECTION, content, 5)
+        if (results && results.length > 0) {
+          ragContext = '\n\n---\nRelevante Dokumente aus der Wissensbasis:\n\n' +
+            results.map((r, i) => `[${i + 1}] ${r.content}`).join('\n\n') +
+            '\n---\n\nNutze die obigen Dokumente als Kontext für deine Antwort, wenn sie relevant sind.'
+        }
+      } catch (err) {
+        console.error('RAG query error:', err)
+      }
+    }
+
     // Prepare messages for API
     const apiMessages = [...messages, userMessage].map(m => ({
       role: m.role,
       content: m.content,
     }))
+
+    // Build enhanced system prompt with RAG context
+    const enhancedSystemPrompt = ragContext
+      ? (systemPrompt || 'Du bist ein hilfreicher Assistent.') + ragContext
+      : systemPrompt
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -149,7 +174,8 @@ Assistent: ${assistantMessage.slice(0, 200)}`,
           messages: apiMessages,
           model: selectedModel,
           stream: true,
-          systemPrompt,
+          systemPrompt: enhancedSystemPrompt,
+          enableTools: webSearchEnabled,  // Web-Search nur wenn aktiviert
         }),
       })
 
@@ -250,7 +276,7 @@ Assistent: ${assistantMessage.slice(0, 200)}`,
     } finally {
       setIsLoading(false)
     }
-  }, [messages, selectedModel, isLoading, saveMessage, chatId, generateTitle, systemPrompt])
+  }, [messages, selectedModel, isLoading, saveMessage, chatId, generateTitle, systemPrompt, ragEnabled, webSearchEnabled])
 
   const clearMessages = useCallback(async () => {
     if (!chatId) return
