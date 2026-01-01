@@ -19,12 +19,13 @@ const AVAILABLE_MODELS = [
 interface UseChatOptions {
   chatId: string | null
   onTitleGenerated?: (chatId: string, title: string) => void
+  systemPrompt?: string
 }
 
-export function useChat({ chatId, onTitleGenerated }: UseChatOptions) {
+export function useChat({ chatId, onTitleGenerated, systemPrompt }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].id)
+  const [selectedModel, setSelectedModel] = useState('openai/gpt-oss-120b')
 
   const loadMessages = useCallback(async () => {
     if (!chatId) {
@@ -148,6 +149,7 @@ Assistent: ${assistantMessage.slice(0, 200)}`,
           messages: apiMessages,
           model: selectedModel,
           stream: true,
+          systemPrompt,
         }),
       })
 
@@ -248,7 +250,7 @@ Assistent: ${assistantMessage.slice(0, 200)}`,
     } finally {
       setIsLoading(false)
     }
-  }, [messages, selectedModel, isLoading, saveMessage, chatId, generateTitle])
+  }, [messages, selectedModel, isLoading, saveMessage, chatId, generateTitle, systemPrompt])
 
   const clearMessages = useCallback(async () => {
     if (!chatId) return

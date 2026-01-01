@@ -20,3 +20,11 @@ export type Chat = {
   created_at: string
   updated_at: string
 }
+
+export type Settings = {
+  id: string
+  key: string
+  value: string | null
+  created_at: string
+  updated_at: string
+}

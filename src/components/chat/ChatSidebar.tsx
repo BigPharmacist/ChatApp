@@ -35,7 +35,7 @@ export function ChatSidebar({
   onDeleteChat,
 }: ChatSidebarProps) {
   return (
-    <div className="flex flex-col h-full w-64 border-r bg-muted/30">
+    <div className="relative z-10 flex flex-col h-full w-64 shrink-0 border-r bg-muted/30">
       <div className="p-3 border-b">
         <Button
           onClick={onNewChat}
@@ -58,13 +58,13 @@ export function ChatSidebar({
               <div
                 key={chat.id}
                 className={cn(
-                  'group flex items-center gap-2 rounded-lg p-2 cursor-pointer hover:bg-muted transition-colors',
+                  'group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg p-2 cursor-pointer hover:bg-muted transition-colors',
                   currentChatId === chat.id && 'bg-muted'
                 )}
                 onClick={() => onSelectChat(chat.id)}
               >
                 <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 overflow-hidden">
                   <p className="text-sm font-medium truncate">
                     {chat.title || 'Neuer Chat'}
                   </p>
@@ -75,13 +75,15 @@ export function ChatSidebar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  className="h-7 w-7 shrink-0 justify-self-end text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   onClick={(e) => {
                     e.stopPropagation()
                     onDeleteChat(chat.id)
                   }}
+                  aria-label="Chat löschen"
+                  title="Chat löschen"
                 >
-                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             ))

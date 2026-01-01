@@ -1,7 +1,9 @@
 import { useChat } from '@/hooks/useChat'
+import { useSettings } from '@/hooks/useSettings'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { ModelSelector } from './ModelSelector'
+import { SettingsDialog } from './SettingsDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -11,6 +13,8 @@ interface ChatContainerProps {
 }
 
 export function ChatContainer({ chatId, onTitleGenerated }: ChatContainerProps) {
+  const { systemPrompt, saveSystemPrompt } = useSettings()
+
   const {
     messages,
     isLoading,
@@ -19,7 +23,7 @@ export function ChatContainer({ chatId, onTitleGenerated }: ChatContainerProps) 
     sendMessage,
     clearMessages,
     availableModels,
-  } = useChat({ chatId, onTitleGenerated })
+  } = useChat({ chatId, onTitleGenerated, systemPrompt })
 
   if (!chatId) {
     return (
@@ -41,6 +45,11 @@ export function ChatContainer({ chatId, onTitleGenerated }: ChatContainerProps) 
             models={availableModels}
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
+            disabled={isLoading}
+          />
+          <SettingsDialog
+            systemPrompt={systemPrompt}
+            onSave={saveSystemPrompt}
             disabled={isLoading}
           />
           <Button

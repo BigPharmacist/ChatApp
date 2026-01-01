@@ -29,6 +29,7 @@ interface ChatRequest {
   model?: string
   stream?: boolean
   enableTools?: boolean
+  systemPrompt?: string
 }
 
 // Modelle und ihre Tool-Choice Unterstützung
@@ -147,7 +148,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { messages: initialMessages, model = "meta-llama/Llama-3.3-70B-Instruct-fast", stream = true, enableTools = true }: ChatRequest = await req.json()
+    const { messages: initialMessages, model = "meta-llama/Llama-3.3-70B-Instruct-fast", stream = true, enableTools = true, systemPrompt }: ChatRequest = await req.json()
 
     // Prüfe ob das Modell Function Calling unterstützt
     const toolChoiceMode = MODEL_TOOL_SUPPORT[model] || "none"  // Default: versuche ohne tool_choice
@@ -173,10 +174,12 @@ Deno.serve(async (req) => {
     const hasSystemMessage = initialMessages.some(m => m.role === "system")
     console.log("Adding system prompt:", useTools && !hasSystemMessage, "DateTime:", currentDateTime)
 
-    const messages: Message[] = (useTools && !hasSystemMessage) ? [
-      {
-        role: "system",
-        content: `Du bist ein hilfreicher Assistent.
+    // System-Prompt: Verwende den übergebenen systemPrompt oder den Default
+    const baseSystemPrompt = systemPrompt || "Du bist ein hilfreicher Assistent."
+
+    // Baue den vollständigen System-Prompt mit Datum und Tool-Infos
+    const fullSystemPrompt = useTools
+      ? `${baseSystemPrompt}
 
 Aktuelles Datum und Uhrzeit: ${currentDateTime}
 
@@ -190,16 +193,24 @@ Beispiele wann du web_search nutzen sollst:
 - "Was kostet... aktuell?"
 - "Wie ist das Wetter in...?"
 - Alle Fragen zu Ereignissen nach deinem Wissensstand`
+      : `${baseSystemPrompt}
+
+Aktuelles Datum und Uhrzeit: ${currentDateTime}`
+
+    const messages: Message[] = !hasSystemMessage ? [
+      {
+        role: "system",
+        content: fullSystemPrompt
       },
       ...initialMessages
     ] : [...initialMessages]
 
-    // Tool-Loop: Maximal 5 Tool-Aufrufe
-    const MAX_TOOL_ITERATIONS = 5
+    // Tool-Loop: Maximal 10 Tool-Aufrufe, danach Antwort erzwingen
+    const MAX_TOOL_ITERATIONS = 10
     let toolIterations = 0
     const usedTools: string[] = []  // Track welche Tools verwendet wurden
 
-    while (toolIterations < MAX_TOOL_ITERATIONS) {
+    while (toolIterations <= MAX_TOOL_ITERATIONS) {
       const requestBody: Record<string, unknown> = {
         model,
         messages,
@@ -208,8 +219,9 @@ Beispiele wann du web_search nutzen sollst:
         temperature: 0.7,
       }
 
-      // Tools nur hinzufügen wenn aktiviert
-      if (useTools) {
+      // Tools nur hinzufügen wenn aktiviert UND noch nicht max erreicht
+      const enableToolsThisRound = useTools && toolIterations < MAX_TOOL_ITERATIONS
+      if (enableToolsThisRound) {
         requestBody.tools = tools
         // tool_choice nur setzen wenn das Modell "auto" unterstützt
         if (toolChoiceMode === "auto") {
